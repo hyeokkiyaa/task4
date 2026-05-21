@@ -22,6 +22,7 @@ DHCP_START = os.environ.get("IOT_WIFI_DHCP_START", "192.168.100.10")
 DHCP_END = os.environ.get("IOT_WIFI_DHCP_END", "192.168.100.80")
 COUNTRY_CODE = os.environ.get("IOT_WIFI_COUNTRY", "KR")
 DEFAULT_AP_CHANNEL = int(os.environ.get("IOT_WIFI_AP_CHANNEL", "6"))
+FORCE_AP_CHANNEL = os.environ.get("IOT_WIFI_FORCE_AP_CHANNEL", "0") == "1"
 
 STATE_DIR = Path(os.environ.get("IOT_WIFI_STATE_DIR", "/var/lib/iot-wifi-setup"))
 RUN_DIR = Path(os.environ.get("IOT_WIFI_RUN_DIR", "/run/iot-wifi-setup"))
@@ -205,6 +206,8 @@ def get_wlan_link():
 
 
 def choose_ap_channel():
+    if FORCE_AP_CHANNEL:
+        return DEFAULT_AP_CHANNEL
     link = get_wlan_link()
     channel = link.get("channel")
     if isinstance(channel, int) and 1 <= channel <= 165:
@@ -552,25 +555,54 @@ def connect_wifi(args):
         run(["nmcli", "device", "set", WLAN_IFACE, "managed", "yes"], check=False)
         run(["nmcli", "radio", "wifi", "on"], check=True)
         run(["nmcli", "connection", "delete", "iot-uplink"], check=False)
-        run(["nmcli", "device", "wifi", "rescan", "ifname", WLAN_IFACE], check=False, timeout=15)
 
-        cmd = [
-            "nmcli",
-            "--wait",
-            "45",
-            "device",
-            "wifi",
-            "connect",
-            ssid,
-            "ifname",
-            WLAN_IFACE,
-            "name",
-            "iot-uplink",
-        ]
+        add_event(events, "Using a saved NetworkManager profile without an extra WiFi rescan")
+        run(
+            [
+                "nmcli",
+                "connection",
+                "add",
+                "type",
+                "wifi",
+                "ifname",
+                WLAN_IFACE,
+                "con-name",
+                "iot-uplink",
+                "ssid",
+                ssid,
+            ],
+            check=True,
+        )
         if password:
-            cmd.extend(["password", password])
-        run(cmd, check=True, timeout=60)
-        run(["nmcli", "connection", "modify", "iot-uplink", "connection.autoconnect", "yes"], check=False)
+            run(
+                [
+                    "nmcli",
+                    "connection",
+                    "modify",
+                    "iot-uplink",
+                    "wifi-sec.key-mgmt",
+                    "wpa-psk",
+                    "wifi-sec.psk",
+                    password,
+                ],
+                check=True,
+            )
+        run(
+            [
+                "nmcli",
+                "connection",
+                "modify",
+                "iot-uplink",
+                "connection.autoconnect",
+                "yes",
+                "connection.autoconnect-priority",
+                "100",
+                "802-11-wireless.powersave",
+                "2",
+            ],
+            check=False,
+        )
+        run(["nmcli", "--wait", "45", "connection", "up", "iot-uplink"], check=True, timeout=60)
         add_event(events, f"{WLAN_IFACE} connected to '{ssid}'")
 
         ip = wait_for_ip()
