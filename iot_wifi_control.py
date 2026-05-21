@@ -153,7 +153,7 @@ def ensure_ap_interface(events):
 def freq_to_channel(freq):
     if not freq:
         return None
-    freq = int(freq)
+    freq = int(float(freq))
     if freq == 2484:
         return 14
     if 2412 <= freq <= 2472:
