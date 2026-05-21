@@ -541,8 +541,11 @@ def connect_wifi(args):
     os.chmod(SELECTED_FILE, 0o600)
 
     add_event(events, f"Saved credentials for SSID '{ssid}'")
-    add_event(events, "Restarting setup AP after the upstream connection is ready")
-    stop_ap(events)
+    add_event(events, "Keeping setup AP running while connecting the upstream WiFi")
+
+    if not pid_is_running(HOSTAPD_PID) or not pid_is_running(DNSMASQ_PID):
+        add_event(events, "Setup AP was not fully running; starting it before uplink connection", "warning")
+        start_ap(argparse.Namespace(channel=None), events)
 
     try:
         run(["rfkill", "unblock", "wifi"], check=False)
@@ -576,8 +579,13 @@ def connect_wifi(args):
         else:
             add_event(events, "Connected but no IPv4 address was received yet", "warning")
 
-        start_ap(argparse.Namespace(channel=None), events)
-        enable_nat(events)
+        if pid_is_running(HOSTAPD_PID) and pid_is_running(DNSMASQ_PID):
+            add_event(events, "Setup AP stayed running during uplink connection")
+            enable_nat(events)
+        else:
+            add_event(events, "Setup AP was interrupted by the WiFi driver; restarting it now", "warning")
+            start_ap(argparse.Namespace(channel=None), events)
+
         ping_result = ping_test()
         if ping_result["internet_ok"]:
             add_event(events, "Internet ping succeeded")
