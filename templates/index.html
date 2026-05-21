@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IoT WiFi Setup</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Raspberry Pi Provisioning AP</p>
+            <h1>IoT WiFi Setup</h1>
+        </div>
+        <div class="ap-badge">
+            <span class="dot"></span>
+            <span>{{ ap_ssid }}</span>
+        </div>
+    </header>
+
+    <main class="workspace">
+        <section class="status-strip" aria-label="Device status">
+            <div class="status-item">
+                <span class="status-label">Setup AP</span>
+                <strong id="apStatus">Checking</strong>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Uplink WiFi</span>
+                <strong id="uplinkStatus">Checking</strong>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Device IP</span>
+                <strong id="ipStatus">Checking</strong>
+            </div>
+        </section>
+
+        <section class="main-grid">
+            <div class="scan-panel">
+                <div class="section-head">
+                    <div>
+                        <h2>WiFi AP List</h2>
+                        <p id="scanMeta">Press refresh to scan nearby WiFi networks.</p>
+                    </div>
+                    <button id="refreshBtn" class="button secondary" type="button">Refresh</button>
+                </div>
+
+                <div id="networkList" class="network-list" aria-live="polite">
+                    <div class="empty">No scan result yet.</div>
+                </div>
+            </div>
+
+            <aside class="connect-panel">
+                <h2>Connect Device</h2>
+                <form id="connectForm" method="post" action="/connect">
+                    <label for="ssidInput">Selected SSID</label>
+                    <input id="ssidInput" name="ssid" autocomplete="off" placeholder="Choose from the list or type SSID">
+
+                    <label for="passwordInput">WiFi Password</label>
+                    <div class="password-row">
+                        <input id="passwordInput" name="password" type="password" autocomplete="current-password" placeholder="Leave empty for open WiFi">
+                        <button id="togglePassword" class="icon-button" type="button" aria-label="Show password">Show</button>
+                    </div>
+
+                    <button id="connectBtn" class="button primary" type="submit">Connect</button>
+                </form>
+
+                <div class="notice">
+                    The AP may restart after Connect. If your phone disconnects, reconnect to <strong>{{ ap_ssid }}</strong> and test internet again.
+                </div>
+
+                <div class="job-box">
+                    <div class="job-head">
+                        <h3>Connection Status</h3>
+                        <button id="pingBtn" class="button ghost" type="button">Ping Test</button>
+                    </div>
+                    <pre id="statusLog">Waiting for action.</pre>
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    <script>
+        window.IOT_WIFI_AP_SSID = {{ ap_ssid|tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
