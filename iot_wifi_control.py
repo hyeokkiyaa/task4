@@ -276,6 +276,7 @@ def start_ap(args, events):
     add_event(events, f"Started dnsmasq DHCP on {AP_IFACE}")
     run(["hostapd", "-B", "-P", str(HOSTAPD_PID), str(HOSTAPD_CONF)], check=True)
     add_event(events, f"Started AP {AP_SSID} on channel {channel}")
+    enable_nat(events)
     return status_payload()
 
 
