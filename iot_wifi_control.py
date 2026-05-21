@@ -272,7 +272,7 @@ def start_ap(args, events):
     write_dnsmasq_conf()
     stop_ap(events)
 
-    run(["dnsmasq", "--conf-file", str(DNSMASQ_CONF), "--pid-file", str(DNSMASQ_PID)], check=True)
+    run(["dnsmasq", f"--conf-file={DNSMASQ_CONF}", f"--pid-file={DNSMASQ_PID}"], check=True)
     add_event(events, f"Started dnsmasq DHCP on {AP_IFACE}")
     run(["hostapd", "-B", "-P", str(HOSTAPD_PID), str(HOSTAPD_CONF)], check=True)
     add_event(events, f"Started AP {AP_SSID} on channel {channel}")
